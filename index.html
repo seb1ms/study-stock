@@ -1,0 +1,730 @@
+
+<!DOCTYPE html>
+
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STUDY-STOCK</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #060606; --panel: #0a0a0a; --border: #0f2a0f;
+    --dim: #1e3a1e; --muted: #2a4a2a; --text: #7ab87a;
+    --text-dim: #3a5a3a; --accent: #00ff00;
+  }
+  html, body { background: var(--bg); color: var(--text); font-family: monospace; min-height: 100vh; }
+
+/* HEADER */
+#header {
+background: var(–panel); border-bottom: 1px solid var(–border);
+padding: 12px 18px; display: flex; justify-content: space-between; align-items: center;
+}
+#header .logo { font-family: ‘Bebas Neue’, sans-serif; font-size: 28px; letter-spacing: 5px; color: var(–accent); line-height: 1; text-shadow: 0 0 20px #00ff0044; }
+#header .subtitle { font-size: 9px; color: var(–text-dim); letter-spacing: 3px; margin-top: 2px; }
+#header-right { text-align: right; display: flex; gap: 12px; align-items: center; }
+.export-btns { display: flex; gap: 6px; }
+.hdr-btn {
+background: transparent; border: 1px solid var(–border); color: var(–text-dim);
+padding: 4px 8px; font-family: monospace; font-size: 9px; cursor: pointer; letter-spacing: 1px;
+}
+.hdr-btn:hover { border-color: var(–accent); color: var(–accent); }
+#grand-total-label { font-size: 9px; color: var(–text-dim); letter-spacing: 2px; }
+#grand-total-val { font-family: ‘Bebas Neue’, sans-serif; font-size: 28px; color: var(–accent); line-height: 1; text-shadow: 0 0 15px #00ff0044; }
+#overall-goal-btn {
+background: transparent; border: 1px solid var(–border); color: var(–text-dim);
+padding: 2px 7px; font-family: monospace; font-size: 9px; cursor: pointer; letter-spacing: 1px; margin-top: 2px;
+display: block; width: 100%;
+}
+#overall-goal-btn:hover { border-color: var(–accent); color: var(–accent); }
+
+/* TICKER */
+#ticker { overflow: hidden; background: var(–panel); border-top: 1px solid var(–border); border-bottom: 1px solid var(–border); padding: 4px 0; }
+#ticker-inner { display: inline-block; white-space: nowrap; font-size: 10px; color: var(–accent); opacity: 0.35; letter-spacing: 2px; }
+
+/* GOAL EDIT BAR */
+#goal-edit-bar {
+background: #0d1a0d; border-bottom: 1px solid var(–border);
+padding: 10px 18px; display: none; gap: 10px; align-items: center; flex-wrap: wrap;
+}
+#goal-edit-bar.visible { display: flex; }
+#goal-edit-label { font-size: 10px; color: var(–text); letter-spacing: 1px; }
+#goal-edit-input {
+background: var(–bg); border: 1px solid var(–dim); color: var(–accent);
+padding: 6px 10px; font-family: monospace; font-size: 13px; width: 110px; outline: none;
+}
+#goal-edit-input:focus { border-color: var(–accent); }
+.goal-ok-btn {
+background: var(–accent); color: #000; border: none; padding: 7px 16px;
+font-family: monospace; font-size: 12px; cursor: pointer; font-weight: bold;
+}
+.goal-cancel-btn {
+background: transparent; border: 1px solid var(–dim); color: var(–text-dim);
+padding: 7px 12px; font-family: monospace; font-size: 12px; cursor: pointer;
+}
+
+/* OVERALL CHART SECTION */
+#overall-section { padding: 12px 14px 10px; border-bottom: 1px solid var(–border); }
+#overall-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+#overall-title { font-size: 9px; color: var(–text-dim); letter-spacing: 3px; }
+#overall-legend { display: flex; gap: 8px; flex-wrap: wrap; }
+.legend-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.legend-item { display: flex; align-items: center; gap: 3px; font-size: 8px; color: var(–text-dim); }
+#overall-chart-wrap { position: relative; height: 120px; }
+#overall-progress-bar-wrap { margin-top: 8px; }
+.progress-track { background: var(–border); height: 3px; border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+.progress-labels { display: flex; justify-content: space-between; font-size: 8px; color: var(–text-dim); margin-top: 3px; }
+
+/* SUBJECT TABS */
+#tabs { display: flex; border-bottom: 1px solid var(–border); background: var(–panel); }
+.tab-btn {
+flex: 1; background: transparent; border: none; border-bottom: 2px solid transparent;
+color: var(–text-dim); padding: 10px 4px; font-family: monospace; font-size: 10px;
+cursor: pointer; letter-spacing: 1px; transition: all 0.15s; text-align: center;
+display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.tab-btn .tab-icon { font-size: 14px; }
+.tab-btn .tab-total { font-size: 9px; opacity: 0.7; }
+.tab-btn:hover { color: var(–accent); }
+
+/* SUBJECT DETAIL */
+#subject-detail { padding: 16px; }
+#subject-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+#subject-label-small { font-size: 9px; color: var(–text-dim); letter-spacing: 3px; margin-bottom: 2px; }
+#subject-total { font-family: ‘Bebas Neue’, sans-serif; font-size: 52px; line-height: 1; }
+#subject-total span { font-size: 18px; color: var(–muted); }
+#subject-last-delta { font-size: 10px; margin-top: 2px; }
+#subject-goal-btn {
+background: transparent; border: 1px solid var(–border); color: var(–text-dim);
+padding: 3px 8px; font-family: monospace; font-size: 9px; cursor: pointer;
+display: block; margin-left: auto; margin-bottom: 4px; width: fit-content;
+}
+#subject-goal-btn:hover { border-color: var(–accent); color: var(–accent); }
+#subject-pct { font-family: ‘Bebas Neue’, sans-serif; font-size: 30px; }
+#subject-sessions { font-size: 9px; color: var(–text-dim); }
+#subject-progress-wrap { margin-bottom: 14px; }
+#subject-chart-box { background: var(–panel); border: 1px solid var(–border); border-radius: 3px; padding: 10px 6px 6px; margin-bottom: 12px; }
+#subject-chart-label { font-size: 8px; color: var(–text-dim); letter-spacing: 2px; margin-bottom: 4px; padding-left: 6px; }
+#subject-chart-wrap { position: relative; height: 200px; }
+
+/* FLASH */
+#flash { padding: 7px 12px; font-size: 11px; margin-bottom: 10px; letter-spacing: 1px; display: none; border-radius: 2px; }
+#flash.visible { display: block; }
+
+/* INPUT ROW */
+#input-row { display: flex; gap: 8px; margin-bottom: 8px; }
+#hours-input {
+flex: 1; background: var(–panel); border: 1px solid var(–border); color: var(–accent);
+padding: 14px; font-family: monospace; font-size: 16px; outline: none; border-radius: 3px;
+}
+#add-btn {
+background: #ff8c00; color: #000; border: none; padding: 14px 20px;
+font-family: ‘Bebas Neue’, sans-serif; font-size: 18px; letter-spacing: 2px;
+cursor: pointer; border-radius: 3px; min-width: 52px; transition: opacity 0.15s;
+}
+#add-btn:hover { opacity: 0.8; }
+#reset-btn {
+background: transparent; color: var(–text-dim); border: 1px solid var(–border);
+padding: 14px; font-family: monospace; font-size: 14px; cursor: pointer; border-radius: 3px;
+}
+#reset-btn:hover { border-color: #ff4444; color: #ff4444; }
+
+/* QUICK BUTTONS */
+#quick-btns { display: flex; gap: 6px; margin-bottom: 8px; }
+.quick-btn {
+flex: 1; background: var(–panel); color: var(–text-dim);
+border: 1px solid var(–border); padding: 8px 0;
+font-family: monospace; font-size: 11px; cursor: pointer; border-radius: 3px; transition: all 0.15s;
+}
+.quick-btn.active, .quick-btn:hover { color: #000; }
+#input-hint { font-size: 9px; color: var(–text-dim); letter-spacing: 1px; }
+
+/* OVERVIEW LIST */
+#overview-section { padding: 14px 16px; border-top: 1px solid var(–border); }
+#overview-title { font-size: 8px; color: var(–text-dim); letter-spacing: 3px; margin-bottom: 10px; }
+.overview-row {
+display: flex; align-items: center; gap: 10px; cursor: pointer;
+padding: 7px 8px; margin-bottom: 2px; border-left: 2px solid transparent;
+transition: all 0.15s;
+}
+.overview-row:hover, .overview-row.active { background: #0d1a0d; }
+.overview-icon { font-size: 14px; width: 22px; text-align: center; }
+.overview-label { font-size: 9px; color: var(–text-dim); width: 58px; letter-spacing: 1px; }
+.overview-bar-track { flex: 1; background: var(–border); height: 2px; border-radius: 1px; }
+.overview-bar-fill { height: 100%; border-radius: 1px; opacity: 0.75; transition: width 0.6s ease; }
+.overview-nums { font-size: 9px; color: var(–text-dim); width: 52px; text-align: right; }
+
+/* DESKTOP LAYOUT */
+@media (min-width: 900px) {
+#header .logo { font-size: 32px; }
+#grand-total-val { font-size: 32px; }
+#header { padding: 14px 28px; }
+#layout { display: flex; flex: 1; height: calc(100vh - 88px); overflow: hidden; }
+#left-col { width: 340px; flex-shrink: 0; border-right: 1px solid var(–border); display: flex; flex-direction: column; overflow-y: auto; }
+#right-col { flex: 1; overflow-y: auto; }
+#overall-section { border-bottom: 1px solid var(–border); }
+#overall-chart-wrap { height: 160px; }
+/* Vertical tabs */
+#tabs { flex-direction: column; border-bottom: none; border-right: 1px solid var(–border); }
+.tab-btn { flex-direction: row; text-align: left; padding: 16px 14px; font-size: 11px; border-bottom: none; border-right: 2px solid transparent; }
+.tab-btn .tab-total { margin-left: auto; }
+#subject-detail { padding: 14px 16px; }
+#subject-total { font-size: 44px; }
+#subject-chart-wrap { height: 170px; }
+}
+</style>
+
+</head>
+<body>
+
+<!-- HEADER -->
+
+<div id="header">
+  <div>
+    <div class="logo">STUDY-STOCK</div>
+    <div class="subtitle">20-DAY LERN-RALLY</div>
+  </div>
+  <div id="header-right">
+    <div class="export-btns">
+      <button class="hdr-btn" onclick="exportData()">↓ EXPORT</button>
+      <button class="hdr-btn" onclick="document.getElementById('file-import').click()">↑ IMPORT</button>
+      <input type="file" id="file-import" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+    <div>
+      <div id="grand-total-label">PORTFOLIO</div>
+      <div id="grand-total-val">0h</div>
+      <button id="overall-goal-btn" onclick="openGoalEdit('overall')">ZIEL: 240h ⚙</button>
+    </div>
+  </div>
+</div>
+
+<!-- TICKER -->
+
+<div id="ticker"><span id="ticker-inner"></span></div>
+
+<!-- GOAL EDIT BAR -->
+
+<div id="goal-edit-bar">
+  <span id="goal-edit-label">ZIEL SETZEN:</span>
+  <input type="number" id="goal-edit-input" min="1" step="1" placeholder="Stunden">
+  <button class="goal-ok-btn" onclick="applyGoal()">OK</button>
+  <button class="goal-cancel-btn" onclick="closeGoalEdit()">✕</button>
+</div>
+
+<div id="layout">
+  <div id="left-col">
+    <!-- OVERALL CHART -->
+    <div id="overall-section">
+      <div id="overall-header">
+        <div id="overall-title">GESAMT-PORTFOLIO</div>
+        <div id="overall-legend"></div>
+      </div>
+      <div id="overall-chart-wrap"><canvas id="overall-chart"></canvas></div>
+      <div id="overall-progress-bar-wrap">
+        <div class="progress-track"><div class="progress-fill" id="overall-progress-fill" style="background: linear-gradient(90deg,#00ff0055,#00ff00); width:0%"></div></div>
+        <div class="progress-labels"><span id="overall-prog-left">0h von 240h</span><span id="overall-prog-right">0%</span></div>
+      </div>
+    </div>
+
+```
+<!-- SUBJECT TABS -->
+<div id="tabs"></div>
+
+<!-- OVERVIEW LIST -->
+<div id="overview-section">
+  <div id="overview-title">ALLE FÄCHER — ÜBERSICHT</div>
+  <div id="overview-list"></div>
+</div>
+```
+
+  </div>
+
+  <div id="right-col">
+    <!-- SUBJECT DETAIL -->
+    <div id="subject-detail">
+      <div id="subject-header">
+        <div>
+          <div id="subject-label-small">— INDEX</div>
+          <div id="subject-total">0<span>h</span></div>
+          <div id="subject-last-delta">— warte auf Update</div>
+        </div>
+        <div style="text-align:right">
+          <button id="subject-goal-btn" onclick="openGoalEdit(state.activeSubject)">ZIEL: —h ⚙</button>
+          <div id="subject-pct">0%</div>
+          <div id="subject-sessions">0 Sessions</div>
+        </div>
+      </div>
+
+```
+  <div id="subject-progress-wrap">
+    <div class="progress-track"><div class="progress-fill" id="subject-progress-fill" style="width:0%"></div></div>
+    <div class="progress-labels">
+      <span>0h</span><span id="subject-prog-mid">0h / 0h</span><span id="subject-prog-right">0h</span>
+    </div>
+  </div>
+
+  <div id="subject-chart-box">
+    <div id="subject-chart-label">KUMULATIVE STUNDEN — LIVE</div>
+    <div id="subject-chart-wrap"><canvas id="subject-chart"></canvas></div>
+  </div>
+
+  <div id="flash"></div>
+
+  <div id="input-row">
+    <input type="number" id="hours-input" placeholder="Stunden (z.B. 2.5)" step="0.5" min="0.1" inputmode="decimal" onkeydown="if(event.key==='Enter') addHours()">
+    <button id="add-btn" onclick="addHours()">▲</button>
+    <button id="reset-btn" onclick="resetSubject()">✕</button>
+  </div>
+  <div id="quick-btns"></div>
+  <div id="input-hint">ENTER ↵ BESTÄTIGEN · DATEN PERSISTENT GESPEICHERT</div>
+</div>
+```
+
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────
+const STORAGE_KEY = 'studystock-v4';
+const SUBJECTS = [
+  { id:'mathe',    label:'MATHE',    icon:'∑', color:'#ff8c00', glow:'rgba(255,140,0,0.35)',  defaultGoal:80  },
+  { id:'physik',   label:'PHYSIK',   icon:'⚛', color:'#4a9eff', glow:'rgba(74,158,255,0.35)', defaultGoal:80  },
+  { id:'deutsch',  label:'DEUTSCH',  icon:'Ä', color:'#ff4444', glow:'rgba(255,68,68,0.35)',  defaultGoal:40  },
+  { id:'englisch', label:'ENGLISCH', icon:'E', color:'#00ff00', glow:'rgba(0,255,0,0.35)',    defaultGoal:40  },
+];
+const TICKER_MSGS = ['MATHE-INDEX ▲','PHYSIK-FUTURES BULLISH','DEUTSCH-RALLY LÄUFT','ENGLISCH ATH','GEHIRN-KAPAZITÄT +∞','KLAUSUR IN SICHT ◆','LERN-PORTFOLIO STEIGT','PROKRASTINATION SHORT'];
+
+// ── STATE ────────────────────────────────────────────────
+let state = null;
+let editingGoalFor = null;
+let overallChart = null;
+let subjectChart = null;
+let flashTimer = null;
+
+function defaultState() {
+  return {
+    activeSubject: 'mathe',
+    overallGoal: 240,
+    subjects: Object.fromEntries(
+      SUBJECTS.map(s => [s.id, { history: [{ u:0, total:0, delta:0 }], goal: s.defaultGoal }])
+    )
+  };
+}
+
+// ── PERSISTENCE ──────────────────────────────────────────
+function loadState() {
+  try {
+    const r = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (r) {
+      const parsed = r;
+      SUBJECTS.forEach(s => {
+        if (!parsed.subjects[s.id]) parsed.subjects[s.id] = { history:[{u:0,total:0,delta:0}], goal:s.defaultGoal };
+        if (!parsed.subjects[s.id].goal) parsed.subjects[s.id].goal = s.defaultGoal;
+      });
+      if (!parsed.overallGoal) parsed.overallGoal = 240;
+      state = parsed;
+    } else { state = defaultState(); }
+  } catch { state = defaultState(); }
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+}
+
+// ── EXPORT / IMPORT ──────────────────────────────────────
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `study-stock-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showFlash('EXPORT ERFOLGREICH ↓', 'ok');
+}
+
+function importData(e) {
+  const file = e.target.files?.[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      SUBJECTS.forEach(s => {
+        if (!parsed.subjects[s.id]) parsed.subjects[s.id] = { history:[{u:0,total:0,delta:0}], goal:s.defaultGoal };
+        if (!parsed.subjects[s.id].goal) parsed.subjects[s.id].goal = s.defaultGoal;
+      });
+      if (!parsed.overallGoal) parsed.overallGoal = 240;
+      state = parsed;
+      saveState();
+      render();
+      showFlash('IMPORT ERFOLGREICH ↑', 'ok');
+    } catch { showFlash('IMPORT FEHLER', 'err'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ── GOAL EDIT ────────────────────────────────────────────
+function openGoalEdit(forId) {
+  editingGoalFor = forId;
+  const s = SUBJECTS.find(s => s.id === forId);
+  const current = forId === 'overall' ? state.overallGoal : state.subjects[forId].goal;
+  document.getElementById('goal-edit-label').textContent = (forId === 'overall' ? 'GESAMT-ZIEL' : s.label + '-ZIEL') + ' SETZEN:';
+  document.getElementById('goal-edit-input').value = '';
+  document.getElementById('goal-edit-input').placeholder = current + 'h';
+  document.getElementById('goal-edit-bar').classList.add('visible');
+  document.getElementById('goal-edit-input').focus();
+}
+
+function closeGoalEdit() {
+  document.getElementById('goal-edit-bar').classList.remove('visible');
+  editingGoalFor = null;
+}
+
+async function applyGoal() {
+  const g = parseFloat(document.getElementById('goal-edit-input').value);
+  if (isNaN(g) || g <= 0) return;
+  if (editingGoalFor === 'overall') state.overallGoal = g;
+  else state.subjects[editingGoalFor].goal = g;
+  saveState();
+  closeGoalEdit();
+  render();
+}
+
+document.getElementById('goal-edit-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') applyGoal();
+  if (e.key === 'Escape') closeGoalEdit();
+});
+
+// ── ADD HOURS ────────────────────────────────────────────
+async function addHours() {
+  const val = parseFloat(document.getElementById('hours-input').value);
+  const subj = SUBJECTS.find(s => s.id === state.activeSubject);
+  if (isNaN(val) || val <= 0) { showFlash('UNGÜLTIGE EINGABE', 'err'); return; }
+  const subData = state.subjects[state.activeSubject];
+  const prev = subData.history[subData.history.length - 1]?.total ?? 0;
+  subData.history.push({ u: subData.history.length, total: parseFloat((prev + val).toFixed(2)), delta: val });
+  saveState();
+  document.getElementById('hours-input').value = '';
+  updateQuickBtns('');
+  showFlash(`+${val}h ${subj.label} ▲`, 'ok');
+  render();
+  document.getElementById('hours-input').focus();
+}
+
+async function resetSubject() {
+  const subj = SUBJECTS.find(s => s.id === state.activeSubject);
+  if (!confirm(`${subj.label} zurücksetzen?`)) return;
+  state.subjects[state.activeSubject].history = [{ u:0, total:0, delta:0 }];
+  saveState();
+  showFlash('RESET', 'err');
+  render();
+}
+
+// ── FLASH ─────────────────────────────────────────────────
+function showFlash(msg, type) {
+  const el = document.getElementById('flash');
+  const subj = SUBJECTS.find(s => s.id === state.activeSubject);
+  el.textContent = msg;
+  el.className = 'visible';
+  if (type === 'ok') {
+    el.style.background = '#001800';
+    el.style.border = `1px solid ${subj.color}88`;
+    el.style.color = subj.color;
+  } else {
+    el.style.background = '#1a0000';
+    el.style.border = '1px solid #ff444488';
+    el.style.color = '#ff6666';
+  }
+  if (flashTimer) clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => { el.className = ''; }, 2500);
+}
+
+// ── QUICK BUTTONS ─────────────────────────────────────────
+function buildQuickBtns() {
+  const container = document.getElementById('quick-btns');
+  container.innerHTML = '';
+  const subj = SUBJECTS.find(s => s.id === state.activeSubject);
+  [0.5, 1, 1.5, 2, 3].forEach(h => {
+    const btn = document.createElement('button');
+    btn.className = 'quick-btn';
+    btn.textContent = h + 'h';
+    btn.dataset.val = h;
+    btn.addEventListener('click', () => {
+      document.getElementById('hours-input').value = h;
+      updateQuickBtns(String(h));
+    });
+    container.appendChild(btn);
+  });
+}
+
+function updateQuickBtns(active) {
+  const subj = SUBJECTS.find(s => s.id === state.activeSubject);
+  document.querySelectorAll('.quick-btn').forEach(btn => {
+    if (btn.dataset.val === active) {
+      btn.classList.add('active');
+      btn.style.background = subj.color;
+      btn.style.color = '#000';
+      btn.style.borderColor = subj.color;
+    } else {
+      btn.classList.remove('active');
+      btn.style.background = 'var(--panel)';
+      btn.style.color = 'var(--text-dim)';
+      btn.style.borderColor = 'var(--border)';
+    }
+  });
+}
+
+document.getElementById('hours-input').addEventListener('input', e => updateQuickBtns(e.target.value));
+
+// ── TABS ──────────────────────────────────────────────────
+function buildTabs() {
+  const container = document.getElementById('tabs');
+  container.innerHTML = '';
+  SUBJECTS.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn';
+    btn.dataset.id = s.id;
+    const sTotal = state.subjects[s.id]?.history.slice(-1)[0]?.total ?? 0;
+    const sg = state.subjects[s.id]?.goal ?? s.defaultGoal;
+    btn.innerHTML = `<span class="tab-icon">${s.icon}</span><span>${s.label}</span><span class="tab-total">${sTotal.toFixed(0)}/${sg}h</span>`;
+    btn.style.setProperty('--tab-color', s.color);
+    if (s.id === state.activeSubject) {
+      btn.style.color = s.color;
+      btn.style.background = '#0d1a0d';
+      btn.style.borderBottomColor = s.color;
+      btn.style.borderRightColor = s.color;
+    }
+    btn.addEventListener('click', () => {
+      state.activeSubject = s.id;
+      render();
+    });
+    container.appendChild(btn);
+  });
+}
+
+// ── OVERVIEW LIST ─────────────────────────────────────────
+function buildOverview() {
+  const container = document.getElementById('overview-list');
+  container.innerHTML = '';
+  SUBJECTS.forEach(s => {
+    const sh = state.subjects[s.id]?.history ?? [];
+    const st = sh[sh.length - 1]?.total ?? 0;
+    const sg = state.subjects[s.id]?.goal ?? s.defaultGoal;
+    const sp = Math.min((st / sg) * 100, 100);
+    const row = document.createElement('div');
+    row.className = 'overview-row' + (s.id === state.activeSubject ? ' active' : '');
+    row.style.borderLeftColor = s.id === state.activeSubject ? s.color : 'transparent';
+    row.innerHTML = `
+      <span class="overview-icon" style="color:${s.color}">${s.icon}</span>
+      <span class="overview-label">${s.label}</span>
+      <div class="overview-bar-track"><div class="overview-bar-fill" style="width:${sp}%;background:${s.color}"></div></div>
+      <span class="overview-nums">${st.toFixed(0)}/${sg}h</span>
+    `;
+    row.addEventListener('click', () => { state.activeSubject = s.id; render(); });
+    container.appendChild(row);
+  });
+}
+
+// ── CHARTS ────────────────────────────────────────────────
+function buildOverallChart() {
+  const maxLen = Math.max(...SUBJECTS.map(s => state.subjects[s.id]?.history.length ?? 1));
+  const labels = Array.from({ length: maxLen }, (_, i) => i === 0 ? '0' : `${i}`);
+  const datasets = SUBJECTS.map(s => {
+    const h = state.subjects[s.id]?.history ?? [];
+    return {
+      label: s.label,
+      data: labels.map((_, i) => h[Math.min(i, h.length - 1)]?.total ?? 0),
+      borderColor: s.color, borderWidth: 1.5,
+      pointRadius: 0, pointHoverRadius: 3,
+      tension: 0.1, fill: false,
+    };
+  });
+  const ctx = document.getElementById('overall-chart').getContext('2d');
+  if (overallChart) overallChart.destroy();
+  overallChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: '#060606', borderColor: '#0f2a0f', borderWidth: 1,
+        titleColor: '#555', bodyColor: '#ccc',
+        titleFont: { family: 'monospace', size: 10 },
+        bodyFont: { family: 'monospace', size: 10 },
+        callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}h` }
+      }},
+      scales: {
+        x: { grid: { color: '#0f2a0f' }, ticks: { color: '#3a5a3a', font: { family:'monospace', size:8 } }, border: { color: '#0f2a0f' } },
+        y: { grid: { color: '#0f2a0f' }, ticks: { color: '#3a5a3a', font: { family:'monospace', size:8 } }, border: { color: '#0f2a0f' }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+function buildSubjectChart() {
+  const subj = SUBJECTS.find(s => s.id === state.activeSubject);
+  const subData = state.subjects[state.activeSubject];
+  const history = subData.history;
+  const subGoal = subData.goal;
+  const total = history[history.length - 1]?.total ?? 0;
+  const labels = history.map(h => h.u === 0 ? '0' : `${h.u}`);
+  const data = history.map(h => h.total);
+  const maxY = Math.max(total * 1.2, subGoal * 0.3, 5);
+  const ctx = document.getElementById('subject-chart').getContext('2d');
+  if (subjectChart) subjectChart.destroy();
+  subjectChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: subj.label,
+        data,
+        borderColor: subj.color, borderWidth: 2.5,
+        pointBackgroundColor: subj.color, pointRadius: 3, pointHoverRadius: 5,
+        tension: 0.1, fill: true,
+        backgroundColor: subj.color.replace(')', ',0.07)').replace('rgb', 'rgba').replace('#', '').length > 10
+          ? subj.color + '12'
+          : subj.color + '12',
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: '#060606', borderColor: subj.color + '55', borderWidth: 1,
+        titleColor: '#555', bodyColor: subj.color,
+        titleFont: { family:'monospace', size:10 }, bodyFont: { family:'monospace', size:14 },
+        callbacks: {
+          title: items => `UPDATE ${history[items[0].dataIndex]?.u ?? 0}`,
+          label: item => ` ${item.parsed.y.toFixed(1)}h`,
+          afterLabel: item => {
+            const d = history[item.dataIndex]?.delta ?? 0;
+            return d > 0 ? ` +${d.toFixed(1)}h Session` : '';
+          }
+        }
+      },
+      annotation: {}
+      },
+      scales: {
+        x: { grid: { color: '#0f2a0f' }, ticks: { color:'#3a5a3a', font:{ family:'monospace', size:8 } }, border:{ color:'#0f2a0f' } },
+        y: { grid: { color: '#0f2a0f' }, ticks: { color:'#3a5a3a', font:{ family:'monospace', size:8 } }, border:{ color:'#0f2a0f' }, min:0, max: maxY,
+          afterDataLimits(scale) { scale.max = maxY; }
+        }
+      }
+    },
+    plugins: [{
+      id: 'goalLine',
+      afterDraw(chart) {
+        const { ctx, chartArea, scales } = chart;
+        const y = scales.y.getPixelForValue(subGoal);
+        if (y < chartArea.top || y > chartArea.bottom) return;
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = '#ff444455';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(chartArea.left, y);
+        ctx.lineTo(chartArea.right, y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#ff444466';
+        ctx.font = '8px monospace';
+        ctx.fillText(`${subGoal}h`, chartArea.right - 28, y - 3);
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+// ── RENDER ────────────────────────────────────────────────
+function render() {
+  const subj = SUBJECTS.find(s => s.id === state.activeSubject);
+  const subData = state.subjects[state.activeSubject];
+  const history = subData.history;
+  const subGoal = subData.goal;
+  const total = history[history.length - 1]?.total ?? 0;
+  const lastDelta = history[history.length - 1]?.delta ?? 0;
+  const sessions = history.length - 1;
+  const pct = Math.min((total / subGoal) * 100, 100);
+  const grandTotal = SUBJECTS.reduce((acc, s) => acc + (state.subjects[s.id]?.history.slice(-1)[0]?.total ?? 0), 0);
+  const grandPct = Math.min((grandTotal / state.overallGoal) * 100, 100);
+
+  // Header
+  document.getElementById('grand-total-val').textContent = grandTotal.toFixed(1) + 'h';
+  document.getElementById('overall-goal-btn').textContent = `ZIEL: ${state.overallGoal}h ⚙`;
+
+  // Overall progress
+  document.getElementById('overall-progress-fill').style.width = grandPct + '%';
+  document.getElementById('overall-prog-left').textContent = `${grandTotal.toFixed(1)}h von ${state.overallGoal}h`;
+  document.getElementById('overall-prog-right').textContent = grandPct.toFixed(1) + '%';
+  document.getElementById('overall-prog-right').style.color = grandPct >= 100 ? 'var(--accent)' : 'var(--text-dim)';
+
+  // Overall legend
+  const legend = document.getElementById('overall-legend');
+  legend.innerHTML = SUBJECTS.map(s => `<div class="legend-item"><span class="legend-dot" style="background:${s.color}"></span>${s.label}</div>`).join('');
+
+  // Subject detail
+  document.getElementById('subject-label-small').textContent = `${subj.icon} ${subj.label} INDEX`;
+  document.getElementById('subject-total').innerHTML = `${total.toFixed(1)}<span>h</span>`;
+  document.getElementById('subject-total').style.color = subj.color;
+  document.getElementById('subject-total').style.textShadow = `0 0 25px ${subj.glow}`;
+  document.getElementById('subject-last-delta').textContent = lastDelta > 0 ? `▲ +${lastDelta.toFixed(1)}h letzte Session` : '— warte auf Update';
+  document.getElementById('subject-last-delta').style.color = lastDelta > 0 ? subj.color : 'var(--text-dim)';
+  document.getElementById('subject-goal-btn').textContent = `ZIEL: ${subGoal}h ⚙`;
+  document.getElementById('subject-pct').textContent = pct.toFixed(1) + '%';
+  document.getElementById('subject-pct').style.color = pct >= 100 ? 'var(--accent)' : 'var(--muted)';
+  document.getElementById('subject-pct').style.textShadow = pct >= 100 ? '0 0 20px var(--accent)' : 'none';
+  document.getElementById('subject-sessions').textContent = sessions + ' Sessions';
+
+  // Subject progress
+  document.getElementById('subject-progress-fill').style.width = pct + '%';
+  document.getElementById('subject-progress-fill').style.background = `linear-gradient(90deg,${subj.color}55,${subj.color})`;
+  document.getElementById('subject-prog-mid').textContent = `${total.toFixed(1)}h / ${subGoal}h`;
+  document.getElementById('subject-prog-right').textContent = subGoal + 'h';
+
+  // Add button color
+  document.getElementById('add-btn').style.background = subj.color;
+  document.getElementById('hours-input').style.setProperty('--focus-color', subj.color);
+
+  // Tabs, overview
+  buildTabs();
+  buildOverview();
+  buildQuickBtns();
+  buildOverallChart();
+  buildSubjectChart();
+}
+
+// ── TICKER ────────────────────────────────────────────────
+function initTicker() {
+  const full = TICKER_MSGS.join('   ◆   ');
+  const text = full + '   ◆   ' + full;
+  document.getElementById('ticker-inner').textContent = text;
+  let x = 0;
+  const charW = 8.4;
+  const loopW = full.length * charW;
+  setInterval(() => {
+    x = (x + 1) % loopW;
+    document.getElementById('ticker-inner').style.transform = `translateX(${-x}px)`;
+  }, 28);
+}
+
+// ── INIT ──────────────────────────────────────────────────
+(async () => {
+  loadState();
+  initTicker();
+  render();
+  document.getElementById('hours-input').addEventListener('focus', function() {
+    const subj = SUBJECTS.find(s => s.id === state.activeSubject);
+    this.style.borderColor = subj.color;
+  });
+  document.getElementById('hours-input').addEventListener('blur', function() {
+    this.style.borderColor = 'var(--border)';
+  });
+})();
+</script>
+
+</body>
+</html>
